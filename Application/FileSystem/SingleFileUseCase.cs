@@ -10,8 +10,6 @@ public static class SingleFileUseCase
 
     private static string GetSavePath(string volumePath, Chapter chapter)
     {
-        if (!string.IsNullOrEmpty(_savePath)) return _savePath;
-        
         var chapterTitle = $"{chapter.ChapterId} - {chapter.Title}.json";
         var sanitizedChapterTitle = PathHelper.SanitizeFileName(chapterTitle);
         _savePath = Path.Combine(volumePath, sanitizedChapterTitle);
@@ -22,6 +20,8 @@ public static class SingleFileUseCase
     public static bool IsChapterExists(string volumePath, Chapter chapter)
     {
         var filePath = GetSavePath(volumePath, chapter);
+
+        Console.WriteLine($"Searched of it in: {filePath}");
 
         return File.Exists(filePath);
     }

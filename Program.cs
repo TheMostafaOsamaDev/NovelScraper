@@ -21,10 +21,13 @@ Console.Write("Please give the novel author name: ");
 var authorName = Console.ReadLine();
 
 Console.Write("Starting volume: ");
-int startingVolume = int.Parse(Console.ReadLine());
+int startingVolume;
+var canBeParsed = int.TryParse(Console.ReadLine(), out startingVolume);
 
 Console.Write("end volume: ");
-int endVolume = int.Parse(Console.ReadLine());
+int endVolume;
+
+canBeParsed = int.TryParse(Console.ReadLine(), out endVolume);
 
 Console.Write("Do you want separated volumes [yes/no] (no is default): ");
 bool isSeparated = Console.ReadLine() == "yes";
@@ -37,7 +40,6 @@ if (novelUrl == null || outputDirectory == null || novelTitle == null || authorN
 }
 
 var font = BookFonts.GetFont();
-
 
 
 var services = new ServiceCollection();
@@ -72,4 +74,3 @@ if (isSeparated)
 }
 else
     epubGenerator.GenerateEpub(novelTitle, authorName);
-
