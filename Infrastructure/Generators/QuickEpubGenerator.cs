@@ -1,0 +1,169 @@
+using System.Net;
+using System.Text;
+using NovelScraper.Application.FileSystem;
+using NovelScraper.Domain.Entities;
+using NovelScraper.Domain.Enums;
+using NovelScraper.Helpers;
+using QuickEPUB;
+
+namespace NovelScraper.Infrastructure.Generators;
+
+public class QuickEpubGenerator
+{
+    private string _novelPath { set; get; }
+    private string _epubPath { set; get; }
+    private List<Volume> _volumes { set; get; }
+    private BookFonts.Font _font { set; get; }
+
+    public QuickEpubGenerator(string novelPath, BookFonts.Font font)
+    {
+        _novelPath = novelPath;
+        _volumes = new List<Volume>();
+        _font = font;
+    }
+
+    public void ReadAndInsertVolumes()
+    {
+        var volumes = ReadAllVolumesFromJsonUseCase.Execute(_novelPath);
+
+        InsertVolumes(volumes);
+    }
+
+    public void InsertVolumes(List<Volume> volumes)
+    {
+        _volumes.AddRange(volumes);
+    }
+
+    public void GenerateEpub(string novelTitle, string authorName)
+    {
+        _epubPath = Path.Combine(_novelPath, novelTitle + ".epub");
+
+        var doc = new Epub(novelTitle, authorName ?? "Unknown");
+        doc.Language = "ar";
+
+        var cssContent = _font.StyleContent;
+        var fontPath = _font.FontPath;
+
+        // Use the ResourceName property instead of extracting from path
+        var fontResourceName = _font.ResourceName;
+
+        // Add font as resource to EPUB
+        try
+        {
+            using (var fontStream = new FileStream(fontPath, FileMode.Open))
+            {
+                doc.AddResource(fontResourceName, EpubResourceType.TTF, fontStream);
+            }
+
+            Console.WriteLine($"Font added successfully: {fontResourceName}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding font: {ex.Message}");
+            Console.WriteLine($"Font path: {fontPath}");
+        }
+
+        foreach (var volume in _volumes)
+        {
+            // Volume title section with CSS class
+            string volumeContent = cssContent + $"<h1 class=\"rtl-content\">{volume.BookTitle}</h1>";
+            doc.AddSection(volume.BookTitle, volumeContent);
+
+            foreach (var chapter in volume.Chapters)
+            {
+                string chapterSection = $"{chapter.ChapterId} - {chapter.Title}";
+                var sb = new StringBuilder();
+                sb.AppendLine(cssContent); // Add CSS to each chapter
+                sb.AppendLine("<div class=\"rtl-content\">");
+                sb.AppendLine($"<h2>{chapter.Title}</h2>");
+
+                foreach (var line in chapter.Lines)
+                {
+                    if (line.LineType == Domain.Enums.LineType.Text)
+                    {
+                        sb.AppendLine($"<p>{WebUtility.HtmlDecode(line.Content)}</p>");
+                    }
+                    else if (line.LineType == Domain.Enums.LineType.Image)
+                    {
+                        sb.AppendLine($"<img src=\"{line.Content}\" alt=\"Image\" />");
+                    }
+                }
+
+                sb.AppendLine("</div>");
+                string chapterContent = sb.ToString();
+                doc.AddSection(chapterSection, chapterContent);
+            }
+        }
+
+        var fs = new FileStream(_epubPath, FileMode.Create);
+        doc.Export(fs);
+        fs.Close();
+
+        Console.WriteLine($"EPUB generated: {_epubPath}");
+    }
+
+    public void GenerateSeparatedEpub(string authorName)
+    {
+        var styleContent = _font.StyleContent;
+        var resourceFont = _font.ResourceName;
+        var fontStream = _font.FontStream;
+        
+        foreach (var volume in _volumes)
+        {
+            _epubPath = Path.Combine(_novelPath, volume.BookTitle + ".epub");
+
+            var doc = new Epub(volume.BookTitle, authorName ?? "Unknown");
+            doc.Language = "ar";
+
+
+            // Add font as resource to EPUB
+            try
+            {
+                doc.AddResource(resourceFont, EpubResourceType.TTF, fontStream);
+
+                Console.WriteLine($"Font added successfully: {resourceFont}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding font: {ex.Message}");
+            }
+
+
+            // Volume title section with CSS class
+            string volumeContent = styleContent + $"<h1 class=\"rtl-content\">{volume.BookTitle}</h1>";
+            doc.AddSection(volume.BookTitle, volumeContent);
+
+            foreach (var chapter in volume.Chapters)
+            {
+                string chapterSection = $"{chapter.ChapterId} - {chapter.Title}";
+                var sb = new StringBuilder();
+                sb.AppendLine(styleContent); // Add CSS to each chapter
+                sb.AppendLine("<div class=\"rtl-content\">");
+                sb.AppendLine($"<h2>{chapter.Title}</h2>");
+                
+
+                foreach (var line in chapter.Lines)
+                {
+                    if (line.LineType == LineType.Text)
+                    {
+                        sb.AppendLine($"<p>{WebUtility.HtmlDecode(line.Content)}</p>");
+                    }
+                    else if (line.LineType == LineType.Image)
+                    {
+                        sb.AppendLine($"<img src=\"{line.Content}\" alt=\"Image\" />");
+                    }
+                }
+
+                sb.AppendLine("</div>");
+                string chapterContent = sb.ToString();
+                doc.AddSection(chapterSection, chapterContent);
+            }
+
+            var fs = new FileStream(_epubPath, FileMode.Create);
+            doc.Export(fs);
+            fs.Close();
+
+            Console.WriteLine($"EPUB Separated generated: {_epubPath}");
+        }
+    }
+}
