@@ -119,9 +119,15 @@ public class QuickEpubGenerator
             // Add font as resource to EPUB
             try
             {
+                // Reset stream position to beginning before each use
+                if (fontStream.CanSeek)
+                {
+                    fontStream.Position = 0;
+                }
+                
                 doc.AddResource(resourceFont, EpubResourceType.TTF, fontStream);
 
-                Console.WriteLine($"Font added successfully: {resourceFont}");
+                Console.WriteLine($"Font added successfully to: {_epubPath}");
             }
             catch (Exception ex)
             {
