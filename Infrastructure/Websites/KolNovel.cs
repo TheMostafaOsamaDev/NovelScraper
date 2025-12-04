@@ -11,10 +11,10 @@ namespace NovelScraper.Infrastructure.Websites;
 public class KolNovel : Website
 {
     public override string Name { get; } = "KolNovel";
-    public override string BaseUrl { get; } = "https://free.kolnovel.com";
+    public new static string BaseUrl { get; } = "https://free.kolnovel.com";
 
-    public string StartUrl { get; }
-    private IBrowserInfrastructure _browserService;
+    private string StartUrl { get; }
+    private readonly IBrowserInfrastructure _browserService;
     private readonly SemaphoreSlim _browserSemaphore;
 
     public KolNovel(string startUrl, IBrowserInfrastructure browserService)
