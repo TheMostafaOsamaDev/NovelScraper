@@ -1,3 +1,5 @@
+using NovelScraper.Domain.Entities.Novel;
+
 namespace NovelScraper.Domain.Entities;
 
 public class Configuration

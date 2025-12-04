@@ -1,17 +1,16 @@
-namespace NovelScraper.Domain.Entities;
+namespace NovelScraper.Domain.Entities.Novel;
 
 public static class BookFonts
 {
-    private static string FontsBasePath { set; get; }
-    private static Dictionary<string, Font> FontsDict = new();
-    private static Font ChosenFont { set; get; }
-
+    private static string FontsBasePath { get; set; }
+    private static readonly Dictionary<string, Font> FontsDict = new();
+    private static Font ChosenFont { get; set; }
 
     static BookFonts()
     {
         AssignFontsBasePath();
         LoadAllFonts();
-        SelectFont();
+        SelectDefaultFont();
     }
 
     private static void AssignFontsBasePath()
@@ -29,59 +28,26 @@ public static class BookFonts
         foreach (var dir in fontsDirectories)
         {
             var folderName = Path.GetFileName(dir);
-
             var fontPath = Path.Combine(dir, "Index.ttf");
-
             var font = new Font(folderName, fontPath);
 
-
-            FontsDict.Add(folderName, font);
+            FontsDict[folderName] = font;
         }
-
-        Console.WriteLine(FontsDict["Alexandria"].ClassName);
-        Console.WriteLine(FontsDict["Alexandria"].FontPath);
     }
 
-    public static void SelectFont()
+
+    private static void SelectDefaultFont()
     {
-        Console.WriteLine("Please Select a font from the list:");
-        var counter = 1;
-        foreach (var key in FontsDict.Keys)
-        {
-            Console.WriteLine($"({counter++}) - {key}");
-        }
+        if (FontsDict.Count == 0)
+            throw new Exception("No fonts found in FontsBasePath.");
 
-        Font selectedFont = null;
-
-        Console.Write("I choose: ");
-        var option = int.Parse(Console.ReadLine());
-
-        counter = 1;
-
-        Font chosenFont = null;
-
-        foreach (var key in FontsDict.Keys)
-        {
-            if (counter++ == option)
-            {
-                Console.WriteLine($"You choose {key}");
-                chosenFont = FontsDict[key];
-                break;
-            }
-        }
-
-        if (chosenFont == null)
-        {
-            throw new Exception("No font selected");
-        }
-
-        ChosenFont = chosenFont;
+        ChosenFont = FontsDict.Values.First();
+        Console.WriteLine($"Default font selected: {ChosenFont.ClassName}");
     }
+
 
     public static Font GetFont()
     {
-        ChosenFont.FontStream = new FileStream(ChosenFont.FontPath, FileMode.Open);
-        ChosenFont.FinalizeFont();
         return ChosenFont;
     }
 
@@ -89,60 +55,15 @@ public static class BookFonts
     {
         public string ClassName { get; }
         public string FontPath { get; }
-        public string ResourceName { set; get; }
+        public string ResourceName { get; set; }
 
-        public FileStream FontStream { set; get; }
-        public string StyleContent { set; get; }
+        public FileStream FontStream { get; set; }
+        public string StyleContent { get; set; }
 
         public Font(string className, string fontPath)
         {
             ClassName = className;
-            FontPath = Path.Combine(FontsBasePath, fontPath);
-        }
-
-
-        public void FinalizeFont()
-        {
-            if (string.IsNullOrEmpty(FontPath) || string.IsNullOrEmpty(ClassName))
-            {
-                throw new ArgumentNullException("All arguments must be given a value");
-            }
-
-            FontStream = new FileStream(FontPath, FileMode.Open);
-
-            ResourceName = Path.GetFileName(FontPath);
-
-            StyleContent = $@"
-                       <style>
-                            @font-face {{
-                            font-family: '{ClassName}';
-                            src: url('{ResourceName}') format('truetype');
-                            font-weight: normal;
-                            font-style: normal;
-                            font-display: swap;
-                        }}
-
-                        body {{
-                            font-family: {ClassName} !important;
-                            direction: rtl;
-                            text-align: right;
-                        }}
-
-                        * {{
-                            font-family: {ClassName} !important;
-                        }}
-
-                        .rtl-content {{
-                            direction: rtl;
-                            text-align: right;
-                            font-family: {ClassName};
-                        }}
-
-                        h1, h2 {{
-                            text-align: center;
-                        }}
-                       </style>
-            ";
+            FontPath = fontPath; // already full path
         }
     }
 }

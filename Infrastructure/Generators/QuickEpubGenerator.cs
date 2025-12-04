@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using NovelScraper.Application.FileSystem;
 using NovelScraper.Domain.Entities;
+using NovelScraper.Domain.Entities.Novel;
 using NovelScraper.Domain.Enums;
 using NovelScraper.Helpers;
 using QuickEPUB;

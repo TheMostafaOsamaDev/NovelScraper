@@ -11,7 +11,7 @@ namespace NovelScraper.Infrastructure.Websites;
 public class KolNovel : Website
 {
     public override string Name { get; } = "KolNovel";
-    public override string BaseUrl { get; } = "https://kolnovel.site";
+    public override string BaseUrl { get; } = "https://free.kolnovel.com";
 
     public string StartUrl { get; }
     private IBrowserInfrastructure _browserService;

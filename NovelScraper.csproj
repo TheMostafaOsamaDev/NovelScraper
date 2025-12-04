@@ -14,4 +14,8 @@
       <PackageReference Include="QuickEPUB" Version="1.2.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Static\Novels\" />
+    </ItemGroup>
+
 </Project>

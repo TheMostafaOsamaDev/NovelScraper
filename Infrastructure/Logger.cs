@@ -42,20 +42,7 @@ public static class Logger
         ResetConsoleColor();
     }
 
-    public static void AllCompleted()
-    {
-        SetConsoleColor(ConsoleColor.Magenta);
-
-        LogSeparator();
-
-        Console.WriteLine("All volumes and chapters have been processed.");
-
-        LogSeparator();
-
-        ResetConsoleColor();
-    }
-
-    private static void LogSeparator()
+    public static void LogSeparator()
     {
         Console.WriteLine("------------------------------");
     }

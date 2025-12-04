@@ -1,10 +1,71 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NovelScraper.Application.FileSystem;
+using NovelScraper.Application.Services;
+using NovelScraper.Application.UserSettingsUseCases;
 using NovelScraper.Domain.Entities;
+using NovelScraper.Domain.Entities.Novel;
+using NovelScraper.Infrastructure;
 using NovelScraper.Infrastructure.BrowserService;
 using NovelScraper.Infrastructure.Generators;
 using NovelScraper.Infrastructure.Interfaces;
 using NovelScraper.Infrastructure.Websites;
+
+var servicesCollection = new ServiceCollection();
+
+servicesCollection.AddSingleton<FindOrCreateUserSettingsUseCase>();
+servicesCollection.AddSingleton<DeleteUserSettingsUseCase>();
+servicesCollection.AddSingleton<SaveUserSettingsUseCase>();
+servicesCollection.AddSingleton<UserSettingsManager>();
+
+var provider = servicesCollection.BuildServiceProvider();
+
+var userSettingsManager = provider.GetRequiredService<UserSettingsManager>();
+
+var settings = userSettingsManager.LoadSettings();
+
+// Start the program
+while (true)
+{
+    // Configuration
+    if (InputManager.IsItYes("Do you want to change anything in the settings?"))
+    {
+        Logger.LogSeparator();
+        
+        Console.WriteLine("You can change: ");
+
+        Console.WriteLine("1. Novels Saving Path.");
+        Console.WriteLine("2. None");
+
+        Console.Write("What do you want to change exactly? ");
+        var isParsedSuccessfully = int.TryParse(Console.ReadLine(), out int option);
+
+        if (isParsedSuccessfully)
+        {
+            switch (option)
+            {
+                case 1:
+                    userSettingsManager.ChangeNovelsPath();
+                    break;
+                default:
+                    Console.WriteLine("Okay restarting again.");
+                    break;
+            }
+        }
+        else
+        {
+            Console.WriteLine("\nSorry wrong input, please try again.");
+            continue;
+        }
+
+
+
+    }
+
+    break;
+}
+
+
+return;
 
 
 Console.Write("Please enter the novel URL: ");
