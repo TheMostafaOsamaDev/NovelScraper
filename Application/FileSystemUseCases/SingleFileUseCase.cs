@@ -2,40 +2,40 @@ using System.Text.Json;
 using NovelScraper.Domain.Entities;
 using NovelScraper.Helpers;
 
-namespace NovelScraper.Application.FileSystem;
+namespace NovelScraper.Application.FileSystemUseCases;
 
 public static class SingleFileUseCase
 {
-    private static string _savePath { set; get; } = "";
+    private static string SavePath { set; get; } = "";
 
-    private static string GetSavePath(string volumePath, Chapter chapter)
+    private static string GetSavePath(string volumeCachePath, Chapter chapter)
     {
         var chapterTitle = $"{chapter.ChapterId} - {chapter.Title}.json";
         var sanitizedChapterTitle = PathHelper.SanitizeFileName(chapterTitle);
-        _savePath = Path.Combine(volumePath, sanitizedChapterTitle);
+        SavePath = Path.Combine(volumeCachePath, sanitizedChapterTitle);
 
-        return _savePath;
+        return SavePath;
     }
     
-    public static bool IsChapterExists(string volumePath, Chapter chapter)
+    public static bool IsChapterExists(string volumeCachePath, Chapter chapter)
     {
-        var filePath = GetSavePath(volumePath, chapter);
+        var filePath = GetSavePath(volumeCachePath, chapter);
 
         Console.WriteLine($"Searched of it in: {filePath}");
 
         return File.Exists(filePath);
     }
 
-    public static Chapter? GetChapter(string volumePath, Chapter chapter)
+    public static Chapter? GetChapter(string volumeCachePath, Chapter chapter)
     {
         try
         {
-            var filePath = GetSavePath(volumePath, chapter);
+            var filePath = GetSavePath(volumeCachePath, chapter);
 
             var json = File.ReadAllText(filePath);
             var chapterData = JsonSerializer.Deserialize<Chapter>(json);
 
-            _savePath = "";
+            SavePath = "";
 
             return chapterData;
         }

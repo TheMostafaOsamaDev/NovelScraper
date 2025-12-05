@@ -15,6 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Static\Cache\" />
       <Folder Include="Static\Novels\" />
     </ItemGroup>
 

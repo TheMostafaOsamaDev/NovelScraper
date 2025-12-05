@@ -22,14 +22,7 @@ public class QuickEpubGenerator
         _volumes = new List<Volume>();
         _font = font;
     }
-
-    public void ReadAndInsertVolumes()
-    {
-        var volumes = ReadAllVolumesFromJsonUseCase.Execute(_novelPath);
-
-        InsertVolumes(volumes);
-    }
-
+    
     public void InsertVolumes(List<Volume> volumes)
     {
         _volumes.AddRange(volumes);
@@ -39,29 +32,31 @@ public class QuickEpubGenerator
     {
         _epubPath = Path.Combine(_novelPath, novelTitle + ".epub");
 
-        var doc = new Epub(novelTitle, authorName ?? "Unknown");
-        doc.Language = "ar";
+        var doc = new Epub(novelTitle, authorName ?? "Unknown")
+        {
+            Language = "ar"
+        };
 
         var cssContent = _font.StyleContent;
-        var fontPath = _font.FontPath;
-
-        // Use the ResourceName property instead of extracting from path
         var fontResourceName = _font.ResourceName;
+        var fontStream = _font.FontStream;
 
         // Add font as resource to EPUB
         try
         {
-            using (var fontStream = new FileStream(fontPath, FileMode.Open))
+            // Reset stream position to beginning
+            if (fontStream.CanSeek)
             {
-                doc.AddResource(fontResourceName, EpubResourceType.TTF, fontStream);
+                fontStream.Position = 0;
             }
+            
+            doc.AddResource(fontResourceName, EpubResourceType.TTF, fontStream);
 
             Console.WriteLine($"Font added successfully: {fontResourceName}");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error adding font: {ex.Message}");
-            Console.WriteLine($"Font path: {fontPath}");
         }
 
         foreach (var volume in _volumes)
@@ -113,8 +108,10 @@ public class QuickEpubGenerator
         {
             _epubPath = Path.Combine(_novelPath, volume.BookTitle + ".epub");
 
-            var doc = new Epub(volume.BookTitle, authorName ?? "Unknown");
-            doc.Language = "ar";
+            var doc = new Epub(volume.BookTitle, authorName ?? "Unknown")
+            {
+                Language = "ar"
+            };
 
 
             // Add font as resource to EPUB

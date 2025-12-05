@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NovelScraper.Application.FileSystem;
+using NovelScraper.Application.FileSystemUseCases;
 using NovelScraper.Application.Services;
 using NovelScraper.Application.UserSettingsUseCases;
 using NovelScraper.Domain.Entities;
@@ -33,7 +34,6 @@ var userSettingsManager = provider.GetRequiredService<UserSettingsManager>();
 
 var settings = userSettingsManager.LoadSettings();
 
-// Start the program
 // Start the program
 while (true)
 {
@@ -85,6 +85,12 @@ while (true)
 
     Console.Write("Please give the novel author name: ");
     var authorName = Console.ReadLine();
+    
+    // Ensure authorName is never null or empty - provide default value
+    if (string.IsNullOrWhiteSpace(authorName))
+    {
+        authorName = "Unknown";
+    }
 
     Console.Write("Starting volume: ");
     int? startingVolume = null;
@@ -99,14 +105,42 @@ while (true)
     Console.Write("Do you want separated volumes [yes/no] (no is default): ");
     bool isSeparated = Console.ReadLine()?.Trim().ToLower() == "yes";
 
-    if (novelTitle == null || authorName == null)
+    if (string.IsNullOrWhiteSpace(novelTitle))
     {
         Console.WriteLine("Please provide all the required inputs.");
         continue;
     }
 
-    // Font
-    var font = BookFonts.GetFont();
+    // Font selection
+    var availableFonts = BookFonts.GetAvailableFonts();
+    var defaultFont = BookFonts.GetDefaultFont();
+    BookFonts.Font selectedFont = defaultFont;
+
+    while (true)
+    {
+        Console.WriteLine("\nFont options:");
+        Console.WriteLine($"Press Enter to use default: {defaultFont.ClassName}");
+        for (int i = 0; i < availableFonts.Count; i++)
+            Console.WriteLine($"{i + 1}. {availableFonts[i].ClassName}");
+
+        Console.Write($"Choose font number [1-{availableFonts.Count}] or Enter for {defaultFont.ClassName}: ");
+        var fontChoice = Console.ReadLine();
+
+        if (string.IsNullOrWhiteSpace(fontChoice))
+        {
+            Console.WriteLine($"Using default font: {defaultFont.ClassName}\n");
+            break;
+        }
+
+        if (int.TryParse(fontChoice, out int fontIndex) && fontIndex >= 1 && fontIndex <= availableFonts.Count)
+        {
+            selectedFont = availableFonts[fontIndex - 1];
+            Console.WriteLine($"Using selected font: {selectedFont.ClassName}\n");
+            break;
+        }
+
+        Console.WriteLine("Invalid choice, please try again.\n");
+    }
 
     // Prepare website scraper
     Website? website = null;
@@ -126,13 +160,17 @@ while (true)
 
     // Configure scraping
     var savingPath = CreateNovelDirectoryUseCase.Execute(outputDirectory, novelTitle);
-    var configuration = new Configuration(savingPath, startingVolume, endVolume, font);
+    var configuration = new Configuration(novelTitle,savingPath, startingVolume, endVolume, selectedFont);
 
     // Start scraping
     var volumes = await website.StartScrapingAsync(configuration);
 
+    Console.WriteLine(selectedFont.ClassName);
+    Console.WriteLine(selectedFont.FontPath);
+    Console.WriteLine(selectedFont.FontStream);
+
     // Generate EPUB
-    var epubGenerator = new QuickEpubGenerator(savingPath, font);
+    var epubGenerator = new QuickEpubGenerator(savingPath, selectedFont);
     epubGenerator.InsertVolumes(volumes.ToList());
 
     if (isSeparated)
@@ -212,3 +250,4 @@ return;
 // }
 // else
 //     epubGenerator.GenerateEpub(novelTitle, authorName);
+

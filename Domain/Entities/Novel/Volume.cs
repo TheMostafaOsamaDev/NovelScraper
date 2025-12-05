@@ -7,6 +7,7 @@ public class Volume(int volumeId, string bookTitle, string volumePath)
     public int VolumeId { get; } = volumeId;
     public string BookTitle { get; } = bookTitle;
     public string VolumePath { get; } = volumePath;
+    public string VolumeCachedPath { set; get; }
     public List<Chapter> Chapters => _chapters;
     
     public void AddChapter(Chapter chapter)

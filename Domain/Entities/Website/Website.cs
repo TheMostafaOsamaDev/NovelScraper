@@ -1,4 +1,5 @@
 using NovelScraper.Domain.Entities;
+using NovelScraper.Domain.Entities.Novel;
 
 namespace NovelScraper.Domain.Enums.Entities.Website;
 

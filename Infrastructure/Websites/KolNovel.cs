@@ -1,6 +1,8 @@
 using Microsoft.Playwright;
 using NovelScraper.Application.FileSystem;
+using NovelScraper.Application.FileSystemUseCases;
 using NovelScraper.Domain.Entities;
+using NovelScraper.Domain.Entities.Novel;
 using NovelScraper.Domain.Enums;
 using NovelScraper.Domain.Enums.Entities.Website;
 using NovelScraper.Helpers;
@@ -8,35 +10,29 @@ using NovelScraper.Infrastructure.Interfaces;
 
 namespace NovelScraper.Infrastructure.Websites;
 
-public class KolNovel : Website
+public class KolNovel(string startUrl, IBrowserInfrastructure browserService) : Website
 {
     public override string Name { get; } = "KolNovel";
     public new static string BaseUrl { get; } = "https://free.kolnovel.com";
 
-    private string StartUrl { get; }
-    private readonly IBrowserInfrastructure _browserService;
-    private readonly SemaphoreSlim _browserSemaphore;
+    private string StartUrl { get; } = startUrl;
+    private readonly SemaphoreSlim _browserSemaphore = new(8, 8);
+    private Configuration _config { set; get; }
 
-    public KolNovel(string startUrl, IBrowserInfrastructure browserService)
-    {
-        StartUrl = startUrl;
-        _browserService = browserService;
-        // Limit concurrent browser operations to prevent resource exhaustion
-        _browserSemaphore = new SemaphoreSlim(8, 8);
-    }
-
+    // Limit concurrent browser operations to prevent resource exhaustion
     public override async Task<Volume[]> StartScrapingAsync(Configuration configuration)
     {
-        string savingDirectory = configuration.SavingDirectory;
-        int? startVolume = configuration.StartVolume;
-        int? endVolume = configuration.EndVolume;
+        _config = configuration;
+        var savingDirectory = _config.SavingDirectory;
+        var startVolume = _config.StartVolume;
+        var endVolume = _config.EndVolume;
         
         
         // 1. Initialize the browser service
-        await _browserService.InitializeAsync(headless: true);
+        await browserService.InitializeAsync(headless: true);
 
         // 2. Get the page and navigate to StartUrl
-        var page = await _browserService.GetPageAsync();
+        var page = await browserService.GetPageAsync();
         await page.GotoAsync(StartUrl);
 
         // 3. Wait for the selector and query elements
@@ -144,12 +140,14 @@ public class KolNovel : Website
 
                 try
                 {
+                    volume.VolumeCachedPath = GetJSONCachedFolderUseCase.Execute(_config.NovelTitle, volume.BookTitle);
+                    
                     // Check if chapter already exists
-                    var isChapterExists = SingleFileUseCase.IsChapterExists(volume.VolumePath, chapter);
+                    var isChapterExists = SingleFileUseCase.IsChapterExists(volume.VolumeCachedPath, chapter);
                     if (isChapterExists)
                     {
                         Logger.LogChapterSkipped(chapter.ChapterId, chapter.Title);
-                        var chapterData = SingleFileUseCase.GetChapter(volume.VolumePath, chapter);
+                        var chapterData = SingleFileUseCase.GetChapter(volume.VolumeCachedPath, chapter);
 
                         if (chapterData?.Lines != null) 
                         {
@@ -180,7 +178,7 @@ public class KolNovel : Website
         try
         {
             // Get a new page for this chapter
-            page = await _browserService.GetPageAsync();
+            page = await browserService.GetPageAsync();
             await page.GotoAsync(chapter.Url);
 
             await page.WaitForFunctionAsync(@"
@@ -214,7 +212,7 @@ public class KolNovel : Website
                 chapter.Lines.AddRange(lines);
             }
 
-            SaveChaptersToJsonUseCase.Execute(volume.VolumePath, chapter);
+            SaveChaptersToJsonUseCase.Execute(volume.VolumeCachedPath, chapter);
             Logger.LogChapterCompleted(chapter.ChapterId, chapter.Title);
         }
         finally

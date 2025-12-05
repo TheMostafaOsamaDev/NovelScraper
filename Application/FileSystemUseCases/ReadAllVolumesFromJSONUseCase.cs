@@ -1,7 +1,7 @@
 using System.Text.Json;
 using NovelScraper.Domain.Entities;
 
-namespace NovelScraper.Application.FileSystem;
+namespace NovelScraper.Application.FileSystemUseCases;
 
 public static class ReadAllVolumesFromJsonUseCase
 {

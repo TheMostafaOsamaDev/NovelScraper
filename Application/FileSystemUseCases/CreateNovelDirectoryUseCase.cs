@@ -1,8 +1,8 @@
 using NovelScraper.Helpers;
 
-namespace NovelScraper.Application.FileSystem;
+namespace NovelScraper.Application.FileSystemUseCases;
 
-public class CreateNovelDirectoryUseCase
+public abstract class CreateNovelDirectoryUseCase
 {
     public static string Execute(string basePath, string novelTitle)
     {
