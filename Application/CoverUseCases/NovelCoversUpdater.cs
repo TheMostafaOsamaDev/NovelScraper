@@ -47,7 +47,14 @@ public class NovelCoversUpdater
             .GetFiles(coversFolder)
             .Where(f => SupportedImageExtensions.Any(ext => 
                 f.EndsWith(ext.TrimStart('*'), StringComparison.OrdinalIgnoreCase)))
-            .OrderBy(f => f)
+            .OrderBy(f => {
+                var fileName = Path.GetFileNameWithoutExtension(f);
+                // Try to parse as number for natural sorting
+                if (int.TryParse(fileName, out int num))
+                    return num;
+                // If not a number, use hash code for consistent ordering
+                return fileName.GetHashCode();
+            })
             .ToList();
 
         if (!coverFiles.Any())
