@@ -18,7 +18,7 @@ public static class ReadAllVolumesFromJsonUseCase
 
             var folderName = Path.GetFileName(folder);
 
-            var volume = new Volume(i + 1, folderName, folder);
+            var volume = new Volume(i + 1, folderName);
 
 
             var allFiles = Directory.GetFiles(folder, "*.json").ToList();

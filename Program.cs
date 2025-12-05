@@ -38,42 +38,43 @@ var settings = userSettingsManager.LoadSettings();
 while (true)
 {
     // Configuration settings
-    if (InputManager.IsItYes("Do you want to change anything in the settings?"))
-    {
-        Logger.LogSeparator();
-
-        Console.WriteLine("You can change: ");
-        Console.WriteLine("1. Novels Saving Path.");
-        Console.WriteLine("2. None");
-
-        Console.Write("What do you want to change exactly? ");
-        var isParsedSuccessfully = int.TryParse(Console.ReadLine(), out int option);
-
-        if (isParsedSuccessfully)
-        {
-            switch (option)
-            {
-                case 1:
-                    userSettingsManager.ChangeNovelsPath();
-                    break;
-                default:
-                    Console.WriteLine("Okay restarting again.");
-                    break;
-            }
-        }
-        else
-        {
-            Console.WriteLine("\nSorry wrong input, please try again.");
-            continue;
-        }
-    }
+    // if (InputManager.IsItYes("Do you want to change anything in the settings?"))
+    // {
+    //     Logger.LogSeparator();
+    //
+    //     Console.WriteLine("You can change: ");
+    //     Console.WriteLine("1. Novels Saving Path.");
+    //     Console.WriteLine("2. None");
+    //
+    //     Console.Write("What do you want to change exactly? ");
+    //     var isParsedSuccessfully = int.TryParse(Console.ReadLine(), out int option);
+    //
+    //     if (isParsedSuccessfully)
+    //     {
+    //         switch (option)
+    //         {
+    //             case 1:
+    //                 userSettingsManager.ChangeNovelsPath();
+    //                 break;
+    //             default:
+    //                 Console.WriteLine("Okay restarting again.");
+    //                 break;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         Console.WriteLine("\nSorry wrong input, please try again.");
+    //         continue;
+    //     }
+    // }
 
     var outputDirectory = settings.NovelsPath;
 
     // Novel inputs
     Console.Write("Please enter the novel URL: ");
-    var novelUrl = Console.ReadLine();
-
+    // var novelUrl = Console.ReadLine();
+    var novelUrl = "https://free.kolnovel.com/series/%d8%b9%d8%a8%d8%af-%d8%a7%d9%84%d8%b8%d9%84/";
+    
     if (string.IsNullOrWhiteSpace(novelUrl) || !UrlHelper.IsUrl(novelUrl))
     {
         Logger.LogError($"Sorry novel url can't be null or empty and must be a valid url.");
@@ -81,10 +82,12 @@ while (true)
     }
 
     Console.Write("Please enter the novel title: ");
-    var novelTitle = Console.ReadLine();
+    // var novelTitle = Console.ReadLine();
 
+    var novelTitle = "عبد الظل";
     Console.Write("Please give the novel author name: ");
-    var authorName = Console.ReadLine();
+    // var authorName = Console.ReadLine();
+    var authorName = "Guiltythree";
     
     // Ensure authorName is never null or empty - provide default value
     if (string.IsNullOrWhiteSpace(authorName))
@@ -103,7 +106,7 @@ while (true)
     if (canBeParsed) endVolume = endVol;
 
     Console.Write("Do you want separated volumes [yes/no] (no is default): ");
-    bool isSeparated = Console.ReadLine()?.Trim().ToLower() == "yes";
+    bool isSeparated = true; // Console.ReadLine()?.Trim().ToLower() == "yes";
 
     if (string.IsNullOrWhiteSpace(novelTitle))
     {
@@ -122,9 +125,11 @@ while (true)
         Console.WriteLine($"Press Enter to use default: {defaultFont.ClassName}");
         for (int i = 0; i < availableFonts.Count; i++)
             Console.WriteLine($"{i + 1}. {availableFonts[i].ClassName}");
+        
 
         Console.Write($"Choose font number [1-{availableFonts.Count}] or Enter for {defaultFont.ClassName}: ");
-        var fontChoice = Console.ReadLine();
+        // var fontChoice = Console.ReadLine();
+        var fontChoice = "";
 
         if (string.IsNullOrWhiteSpace(fontChoice))
         {
@@ -160,14 +165,10 @@ while (true)
 
     // Configure scraping
     var savingPath = CreateNovelDirectoryUseCase.Execute(outputDirectory, novelTitle);
-    var configuration = new Configuration(novelTitle,savingPath, startingVolume, endVolume, selectedFont);
+    var configuration = new Configuration(novelTitle, savingPath, startingVolume, endVolume, selectedFont);
 
     // Start scraping
     var volumes = await website.StartScrapingAsync(configuration);
-
-    Console.WriteLine(selectedFont.ClassName);
-    Console.WriteLine(selectedFont.FontPath);
-    Console.WriteLine(selectedFont.FontStream);
 
     // Generate EPUB
     var epubGenerator = new QuickEpubGenerator(savingPath, selectedFont);
@@ -250,4 +251,3 @@ return;
 // }
 // else
 //     epubGenerator.GenerateEpub(novelTitle, authorName);
-
