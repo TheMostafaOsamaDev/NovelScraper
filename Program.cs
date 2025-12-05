@@ -38,42 +38,41 @@ var settings = userSettingsManager.LoadSettings();
 while (true)
 {
     // Configuration settings
-    // if (InputManager.IsItYes("Do you want to change anything in the settings?"))
-    // {
-    //     Logger.LogSeparator();
-    //
-    //     Console.WriteLine("You can change: ");
-    //     Console.WriteLine("1. Novels Saving Path.");
-    //     Console.WriteLine("2. None");
-    //
-    //     Console.Write("What do you want to change exactly? ");
-    //     var isParsedSuccessfully = int.TryParse(Console.ReadLine(), out int option);
-    //
-    //     if (isParsedSuccessfully)
-    //     {
-    //         switch (option)
-    //         {
-    //             case 1:
-    //                 userSettingsManager.ChangeNovelsPath();
-    //                 break;
-    //             default:
-    //                 Console.WriteLine("Okay restarting again.");
-    //                 break;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         Console.WriteLine("\nSorry wrong input, please try again.");
-    //         continue;
-    //     }
-    // }
+    if (InputManager.IsItYes("Do you want to change anything in the settings?"))
+    {
+        Logger.LogSeparator();
+    
+        Console.WriteLine("You can change: ");
+        Console.WriteLine("1. Novels Saving Path.");
+        Console.WriteLine("2. None");
+    
+        Console.Write("What do you want to change exactly? ");
+        var isParsedSuccessfully = int.TryParse(Console.ReadLine(), out int option);
+    
+        if (isParsedSuccessfully)
+        {
+            switch (option)
+            {
+                case 1:
+                    userSettingsManager.ChangeNovelsPath();
+                    break;
+                default:
+                    Console.WriteLine("Okay restarting again.");
+                    break;
+            }
+        }
+        else
+        {
+            Console.WriteLine("\nSorry wrong input, please try again.");
+            continue;
+        }
+    }
 
     var outputDirectory = settings.NovelsPath;
 
     // Novel inputs
     Console.Write("Please enter the novel URL: ");
-    // var novelUrl = Console.ReadLine();
-    var novelUrl = "https://free.kolnovel.com/series/%d8%b9%d8%a8%d8%af-%d8%a7%d9%84%d8%b8%d9%84/";
+    var novelUrl = Console.ReadLine();
     
     if (string.IsNullOrWhiteSpace(novelUrl) || !UrlHelper.IsUrl(novelUrl))
     {
@@ -82,12 +81,10 @@ while (true)
     }
 
     Console.Write("Please enter the novel title: ");
-    // var novelTitle = Console.ReadLine();
+    var novelTitle = Console.ReadLine();
 
-    var novelTitle = "عبد الظل";
     Console.Write("Please give the novel author name: ");
-    // var authorName = Console.ReadLine();
-    var authorName = "Guiltythree";
+    var authorName = Console.ReadLine();
     
     // Ensure authorName is never null or empty - provide default value
     if (string.IsNullOrWhiteSpace(authorName))
@@ -106,7 +103,7 @@ while (true)
     if (canBeParsed) endVolume = endVol;
 
     Console.Write("Do you want separated volumes [yes/no] (no is default): ");
-    bool isSeparated = true; // Console.ReadLine()?.Trim().ToLower() == "yes";
+    bool isSeparated = Console.ReadLine()?.Trim().ToLower() == "yes";
 
     if (string.IsNullOrWhiteSpace(novelTitle))
     {
@@ -128,8 +125,7 @@ while (true)
         
 
         Console.Write($"Choose font number [1-{availableFonts.Count}] or Enter for {defaultFont.ClassName}: ");
-        // var fontChoice = Console.ReadLine();
-        var fontChoice = "";
+        var fontChoice = Console.ReadLine();
 
         if (string.IsNullOrWhiteSpace(fontChoice))
         {
