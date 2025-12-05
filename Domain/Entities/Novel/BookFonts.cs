@@ -89,19 +89,30 @@ public static class BookFonts
             FontStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             
             // Initialize StyleContent with RTL CSS
+            // The font file is embedded in the EPUB, QuickEPUB typically stores fonts in the root
             StyleContent = $@"
 <style>
     @font-face {{
         font-family: '{className}';
-        src: url('{ResourceName}');
+        src: url('{ResourceName}') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }}
+    * {{
+        font-family: '{className}', Arial, sans-serif !important;
     }}
     .rtl-content {{
         direction: rtl;
         text-align: right;
-        font-family: '{className}', serif;
+        font-family: '{className}', Arial, sans-serif !important;
     }}
     body {{
-        font-family: '{className}', serif;
+        font-family: '{className}', Arial, sans-serif !important;
+        direction: rtl;
+        text-align: right;
+    }}
+    p, h1, h2, h3, h4, h5, h6, div {{
+        font-family: '{className}', Arial, sans-serif !important;
     }}
 </style>";
         }
