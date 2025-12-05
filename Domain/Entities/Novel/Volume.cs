@@ -1,12 +1,12 @@
 namespace NovelScraper.Domain.Entities;
 
-public class Volume(int volumeId, string bookTitle, string volumePath)
+public class Volume(int volumeId, string bookTitle)
 {
     private readonly List<Chapter> _chapters = new();
 
     public int VolumeId { get; } = volumeId;
     public string BookTitle { get; } = bookTitle;
-    public string VolumePath { get; } = volumePath;
+    // public string VolumePath { get; } = volumePath;
     public string VolumeCachedPath { set; get; }
     public List<Chapter> Chapters => _chapters;
     

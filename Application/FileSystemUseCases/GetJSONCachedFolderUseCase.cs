@@ -9,10 +9,13 @@ namespace NovelScraper.Application.FileSystemUseCases;
 
 public class GetJSONCachedFolderUseCase
 {
+    private const int MaxSegmentLength = 60;
+
     public static string Execute(string novelTitle, string volumeTitle)
     {
-        var jsonCachePath = Path.Combine(Configuration.JsonCacheDirectory, PathHelper.SanitizeFileName(novelTitle),
-            PathHelper.SanitizeFileName(volumeTitle));
+        var novelSegment = PathHelper.SanitizeAndTrim(novelTitle, MaxSegmentLength, "Novel");
+        var volumeSegment = PathHelper.SanitizeAndTrim(volumeTitle, MaxSegmentLength, "Volume");
+        var jsonCachePath = Path.Combine(Configuration.JsonCacheDirectory, novelSegment, volumeSegment);
 
         if (!Directory.Exists(jsonCachePath))
             Directory.CreateDirectory(jsonCachePath);

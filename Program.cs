@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NovelScraper.Application.CoverUseCases;
 using NovelScraper.Application.FileSystem;
 using NovelScraper.Application.FileSystemUseCases;
 using NovelScraper.Application.Services;
@@ -6,11 +7,13 @@ using NovelScraper.Application.UserSettingsUseCases;
 using NovelScraper.Domain.Entities;
 using NovelScraper.Domain.Entities.Novel;
 using NovelScraper.Domain.Enums.Entities.Website;
+using NovelScraper.Domain.Interfaces;
 using NovelScraper.Helpers;
 using NovelScraper.Infrastructure;
 using NovelScraper.Infrastructure.BrowserService;
 using NovelScraper.Infrastructure.Generators;
 using NovelScraper.Infrastructure.Interfaces;
+using NovelScraper.Infrastructure.Services;
 using NovelScraper.Infrastructure.Websites;
 
 var servicesCollection = new ServiceCollection();
@@ -20,6 +23,12 @@ servicesCollection.AddSingleton<FindOrCreateUserSettingsUseCase>();
 servicesCollection.AddSingleton<DeleteUserSettingsUseCase>();
 servicesCollection.AddSingleton<SaveUserSettingsUseCase>();
 servicesCollection.AddSingleton<UserSettingsManager>();
+
+// Cover Update Services
+servicesCollection.AddSingleton<IEpubCoverService, EpubCoverService>();
+servicesCollection.AddSingleton<NovelFolderScanner>();
+servicesCollection.AddSingleton<NovelCoversUpdater>();
+servicesCollection.AddSingleton<NovelsCoverUpdateOrchestrator>();
 
 // Browser
 servicesCollection.AddSingleton<IBrowserInfrastructure, PlaywrightBrowserService>();
@@ -37,18 +46,130 @@ var settings = userSettingsManager.LoadSettings();
 // Start the program
 while (true)
 {
+    Console.WriteLine("\n=== NovelScraper Menu ===");
+    Console.WriteLine("1. Download Novels");
+    Console.WriteLine("2. Update Downloaded Novels Covers");
+    Console.WriteLine("3. User Settings");
+    Console.WriteLine("4. Exit");
+    Console.Write("\nSelect an option: ");
+    
+    var menuChoice = Console.ReadLine();
+    
+    if (menuChoice == "4")
+    {
+        Console.WriteLine("Goodbye!");
+        break;
+    }
+    
+    if (menuChoice == "3")
+    {
+        Logger.LogSeparator();
+        Console.WriteLine("User Settings:");
+        Console.WriteLine("1. Change Novels Saving Path");
+        Console.WriteLine("2. Back to Main Menu");
+        Console.Write("Select: ");
+        
+        var settingsChoice = Console.ReadLine();
+        if (settingsChoice == "1")
+        {
+            userSettingsManager.ChangeNovelsPath();
+        }
+        continue;
+    }
+    
+    if (menuChoice == "2")
+    {
+        // Update Downloaded Novels Covers
+        Console.WriteLine($"\n=== Update Downloaded Novels Covers ===");
+        Console.WriteLine($"Novels Directory: {settings.NovelsPath}");
+        
+        if (!InputManager.IsItYes("Is this the correct folder?"))
+        {
+            Console.WriteLine("Please update the novels path in User Settings first.");
+            continue;
+        }
+        
+        Console.WriteLine("\n⚠️  IMPORTANT: Folder Structure Required ⚠️");
+        Console.WriteLine("Each novel must follow this structure:");
+        Console.WriteLine("  Novel Title/");
+        Console.WriteLine("    ├── Volume1.epub");
+        Console.WriteLine("    ├── Volume2.epub");
+        Console.WriteLine("    └── covers/");
+        Console.WriteLine("        ├── 1.png (or .jpg, .jpeg, .gif, .bmp, .webp)");
+        Console.WriteLine("        └── 2.png (or .jpg, .jpeg, .gif, .bmp, .webp)");
+        Console.WriteLine("\nSupported image formats: PNG, JPG, JPEG, GIF, BMP, WEBP");
+        Console.WriteLine();
+        
+        if (!InputManager.IsItYes("Does your folder follow this structure?"))
+        {
+            Console.WriteLine("Please organize your folders according to this structure first.");
+            continue;
+        }
+        
+        var orchestrator = provider.GetRequiredService<NovelsCoverUpdateOrchestrator>();
+        var reports = orchestrator.Execute(settings);
+        
+        Console.WriteLine("\n=== Summary ===");
+        var reportsList = reports.ToList();
+        var totalUpdated = reportsList.Sum(r => r.UpdatedVolumes.Count);
+        var totalMissing = reportsList.Sum(r => r.MissingCoverVolumes.Count);
+        
+        Console.WriteLine($"✓ Total volumes updated: {totalUpdated}");
+        Console.WriteLine($"✗ Total volumes missing covers: {totalMissing}");
+        
+        foreach (var report in reportsList)
+        {
+            Console.WriteLine($"\n=== {report.NovelName} ===");
+            
+            if (report.CoversFolderMissing)
+            {
+                Console.WriteLine("⚠️  'covers' folder is missing");
+                continue;
+            }
+            
+            if (!report.HasVolumes)
+            {
+                Console.WriteLine("⚠️  No EPUB volumes detected");
+                continue;
+            }
+            
+            if (report.UpdatedVolumes.Count > 0)
+            {
+                Console.WriteLine("Updated:");
+                foreach (var vol in report.UpdatedVolumes)
+                    Console.WriteLine($"  ✓ {vol}");
+            }
+            
+            if (report.MissingCoverVolumes.Count > 0)
+            {
+                Console.WriteLine("Missing Covers:");
+                foreach (var vol in report.MissingCoverVolumes)
+                    Console.WriteLine($"  ✗ {vol}");
+            }
+        }
+        
+        continue;
+    }
+    
+    if (menuChoice != "1")
+    {
+        Console.WriteLine("Invalid option. Please try again.");
+        continue;
+    }
+    
+    // Download Novels (Original workflow)
     // Configuration settings
     if (InputManager.IsItYes("Do you want to change anything in the settings?"))
     {
         Logger.LogSeparator();
-
+    
         Console.WriteLine("You can change: ");
         Console.WriteLine("1. Novels Saving Path.");
         Console.WriteLine("2. None");
-
+    
         Console.Write("What do you want to change exactly? ");
         var isParsedSuccessfully = int.TryParse(Console.ReadLine(), out int option);
-
+    
         if (isParsedSuccessfully)
         {
             switch (option)
@@ -73,7 +194,7 @@ while (true)
     // Novel inputs
     Console.Write("Please enter the novel URL: ");
     var novelUrl = Console.ReadLine();
-
+    
     if (string.IsNullOrWhiteSpace(novelUrl) || !UrlHelper.IsUrl(novelUrl))
     {
         Logger.LogError($"Sorry novel url can't be null or empty and must be a valid url.");
@@ -122,6 +243,7 @@ while (true)
         Console.WriteLine($"Press Enter to use default: {defaultFont.ClassName}");
         for (int i = 0; i < availableFonts.Count; i++)
             Console.WriteLine($"{i + 1}. {availableFonts[i].ClassName}");
+        
 
         Console.Write($"Choose font number [1-{availableFonts.Count}] or Enter for {defaultFont.ClassName}: ");
         var fontChoice = Console.ReadLine();
@@ -160,14 +282,10 @@ while (true)
 
     // Configure scraping
     var savingPath = CreateNovelDirectoryUseCase.Execute(outputDirectory, novelTitle);
-    var configuration = new Configuration(novelTitle,savingPath, startingVolume, endVolume, selectedFont);
+    var configuration = new Configuration(novelTitle, savingPath, startingVolume, endVolume, selectedFont);
 
     // Start scraping
     var volumes = await website.StartScrapingAsync(configuration);
-
-    Console.WriteLine(selectedFont.ClassName);
-    Console.WriteLine(selectedFont.FontPath);
-    Console.WriteLine(selectedFont.FontStream);
 
     // Generate EPUB
     var epubGenerator = new QuickEpubGenerator(savingPath, selectedFont);
@@ -250,4 +368,3 @@ return;
 // }
 // else
 //     epubGenerator.GenerateEpub(novelTitle, authorName);
-

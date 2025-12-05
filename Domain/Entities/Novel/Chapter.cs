@@ -7,6 +7,7 @@ public class Chapter
     public string Title { get; set; }
     public string Url { get; set; }
     public List<Line>? Lines { get; set; }
+    public static int MaxTitleLength = 100;
 
     public Chapter()
     {

@@ -61,10 +61,12 @@ public class KolNovel(string startUrl, IBrowserInfrastructure browserService) : 
                 continue;
             }
 
-            var volumePath =
-                CreateVolumeDirectoryUseCase.Execute(volumeId, volumeTitle, savingDirectory);
+            // var volumePath =
+            //     CreateVolumeDirectoryUseCase.Execute(volumeId, volumeTitle, savingDirectory);
+            //
+            // Console.WriteLine($"############# {volumePath}");
 
-            var volume = new Volume(volumeId, volumeTitle, volumePath);
+            var volume = new Volume(volumeId, volumeTitle);
 
             var anchorElements =
                 (await volumeElement.QuerySelectorAllAsync("+ .ts-chl-collapsible-content ul li a"))
@@ -79,7 +81,10 @@ public class KolNovel(string startUrl, IBrowserInfrastructure browserService) : 
                 var chapterTitle =
                     await chapterTitleElement?.TextContentAsync()! ?? $"{currentChapterId} - No Title";
 
-                var chapter = new Chapter(currentChapterId++, chapterTitle, url);
+                var sanitizedChapterTitle = 
+                    PathHelper.SanitizeAndTrim(chapterTitle, Chapter.MaxTitleLength, $"{currentChapterId}");
+
+                var chapter = new Chapter(currentChapterId++, sanitizedChapterTitle, url);
                 volume.AddChapter(chapter);
             }
 
@@ -140,6 +145,8 @@ public class KolNovel(string startUrl, IBrowserInfrastructure browserService) : 
 
                 try
                 {
+                    if(chapter.ChapterId ==  464)
+                        Console.WriteLine("Processing Chapter: " + chapter.Title);
                     volume.VolumeCachedPath = GetJSONCachedFolderUseCase.Execute(_config.NovelTitle, volume.BookTitle);
                     
                     // Check if chapter already exists

@@ -6,12 +6,13 @@ namespace NovelScraper.Application.FileSystemUseCases;
 
 public static class SingleFileUseCase
 {
+    private const int MaxChapterFileLength = 100;
     private static string SavePath { set; get; } = "";
 
     private static string GetSavePath(string volumeCachePath, Chapter chapter)
     {
         var chapterTitle = $"{chapter.ChapterId} - {chapter.Title}.json";
-        var sanitizedChapterTitle = PathHelper.SanitizeFileName(chapterTitle);
+        var sanitizedChapterTitle = PathHelper.SanitizeAndTrim(chapterTitle, MaxChapterFileLength, $"Chapter-{chapter.ChapterId}");
         SavePath = Path.Combine(volumeCachePath, sanitizedChapterTitle);
 
         return SavePath;
