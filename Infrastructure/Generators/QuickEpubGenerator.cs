@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using NovelScraper.Application.FileSystem;
 using NovelScraper.Domain.Entities;
+using NovelScraper.Domain.Entities.Novel;
 using NovelScraper.Domain.Enums;
 using NovelScraper.Helpers;
 using QuickEPUB;
@@ -21,14 +22,7 @@ public class QuickEpubGenerator
         _volumes = new List<Volume>();
         _font = font;
     }
-
-    public void ReadAndInsertVolumes()
-    {
-        var volumes = ReadAllVolumesFromJsonUseCase.Execute(_novelPath);
-
-        InsertVolumes(volumes);
-    }
-
+    
     public void InsertVolumes(List<Volume> volumes)
     {
         _volumes.AddRange(volumes);
@@ -38,35 +32,38 @@ public class QuickEpubGenerator
     {
         _epubPath = Path.Combine(_novelPath, novelTitle + ".epub");
 
-        var doc = new Epub(novelTitle, authorName ?? "Unknown");
-        doc.Language = "ar";
+        var doc = new Epub(novelTitle, authorName ?? "Unknown")
+        {
+            Language = "ar"
+        };
 
         var cssContent = _font.StyleContent;
-        var fontPath = _font.FontPath;
-
-        // Use the ResourceName property instead of extracting from path
         var fontResourceName = _font.ResourceName;
+        var fontStream = _font.FontStream;
+        var fontFamily = _font.ClassName;
 
         // Add font as resource to EPUB
         try
         {
-            using (var fontStream = new FileStream(fontPath, FileMode.Open))
+            // Reset stream position to beginning
+            if (fontStream.CanSeek)
             {
-                doc.AddResource(fontResourceName, EpubResourceType.TTF, fontStream);
+                fontStream.Position = 0;
             }
+            
+            doc.AddResource(fontResourceName, EpubResourceType.TTF, fontStream);
 
-            Console.WriteLine($"Font added successfully: {fontResourceName}");
+            Console.WriteLine($"Font added successfully: {fontResourceName} for font-family: {fontFamily}");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error adding font: {ex.Message}");
-            Console.WriteLine($"Font path: {fontPath}");
         }
 
         foreach (var volume in _volumes)
         {
             // Volume title section with CSS class
-            string volumeContent = cssContent + $"<h1 class=\"rtl-content\">{volume.BookTitle}</h1>";
+            string volumeContent = cssContent + $"<div style=\"font-family: '{fontFamily}', Arial, sans-serif; direction: rtl; text-align: right;\"><h1 class=\"rtl-content\">{volume.BookTitle}</h1></div>";
             doc.AddSection(volume.BookTitle, volumeContent);
 
             foreach (var chapter in volume.Chapters)
@@ -74,14 +71,14 @@ public class QuickEpubGenerator
                 string chapterSection = $"{chapter.ChapterId} - {chapter.Title}";
                 var sb = new StringBuilder();
                 sb.AppendLine(cssContent); // Add CSS to each chapter
-                sb.AppendLine("<div class=\"rtl-content\">");
-                sb.AppendLine($"<h2>{chapter.Title}</h2>");
+                sb.AppendLine($"<div class=\"rtl-content\" style=\"font-family: '{fontFamily}', Arial, sans-serif; direction: rtl; text-align: right;\">");
+                sb.AppendLine($"<h2 style=\"font-family: '{fontFamily}', Arial, sans-serif;\">{chapter.Title}</h2>");
 
                 foreach (var line in chapter.Lines)
                 {
                     if (line.LineType == Domain.Enums.LineType.Text)
                     {
-                        sb.AppendLine($"<p>{WebUtility.HtmlDecode(line.Content)}</p>");
+                        sb.AppendLine($"<p style=\"font-family: '{fontFamily}', Arial, sans-serif;\">{WebUtility.HtmlDecode(line.Content)}</p>");
                     }
                     else if (line.LineType == Domain.Enums.LineType.Image)
                     {
@@ -107,14 +104,16 @@ public class QuickEpubGenerator
         var styleContent = _font.StyleContent;
         var resourceFont = _font.ResourceName;
         var fontStream = _font.FontStream;
+        var fontFamily = _font.ClassName;
         
         foreach (var volume in _volumes)
         {
             _epubPath = Path.Combine(_novelPath, volume.BookTitle + ".epub");
 
-            var doc = new Epub(volume.BookTitle, authorName ?? "Unknown");
-            doc.Language = "ar";
-
+            var doc = new Epub(volume.BookTitle, authorName ?? "Unknown")
+            {
+                Language = "ar"
+            };
 
             // Add font as resource to EPUB
             try
@@ -127,16 +126,15 @@ public class QuickEpubGenerator
                 
                 doc.AddResource(resourceFont, EpubResourceType.TTF, fontStream);
 
-                Console.WriteLine($"Font added successfully to: {_epubPath}");
+                Console.WriteLine($"Font added successfully: {resourceFont} for font-family: {fontFamily}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error adding font: {ex.Message}");
             }
 
-
             // Volume title section with CSS class
-            string volumeContent = styleContent + $"<h1 class=\"rtl-content\">{volume.BookTitle}</h1>";
+            string volumeContent = styleContent + $"<div style=\"font-family: '{fontFamily}', Arial, sans-serif; direction: rtl; text-align: right;\"><h1 class=\"rtl-content\">{volume.BookTitle}</h1></div>";
             doc.AddSection(volume.BookTitle, volumeContent);
 
             foreach (var chapter in volume.Chapters)
@@ -144,15 +142,15 @@ public class QuickEpubGenerator
                 string chapterSection = $"{chapter.ChapterId} - {chapter.Title}";
                 var sb = new StringBuilder();
                 sb.AppendLine(styleContent); // Add CSS to each chapter
-                sb.AppendLine("<div class=\"rtl-content\">");
-                sb.AppendLine($"<h2>{chapter.Title}</h2>");
+                sb.AppendLine($"<div class=\"rtl-content\" style=\"font-family: '{fontFamily}', Arial, sans-serif; direction: rtl; text-align: right;\">");
+                sb.AppendLine($"<h2 style=\"font-family: '{fontFamily}', Arial, sans-serif;\">{chapter.Title}</h2>");
                 
 
                 foreach (var line in chapter.Lines)
                 {
                     if (line.LineType == LineType.Text)
                     {
-                        sb.AppendLine($"<p>{WebUtility.HtmlDecode(line.Content)}</p>");
+                        sb.AppendLine($"<p style=\"font-family: '{fontFamily}', Arial, sans-serif;\">{WebUtility.HtmlDecode(line.Content)}</p>");
                     }
                     else if (line.LineType == LineType.Image)
                     {

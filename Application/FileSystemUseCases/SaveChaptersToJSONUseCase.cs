@@ -1,16 +1,17 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using NovelScraper.Domain.Entities;
+using NovelScraper.Domain.Entities.Novel;
 using NovelScraper.Helpers;
 
-namespace NovelScraper.Application.FileSystem;
+namespace NovelScraper.Application.FileSystemUseCases;
 
 public abstract class SaveChaptersToJsonUseCase
 {
-    public static void Execute(string volumePath, Chapter chapter)
+    public static void Execute(string jsonCachePath, Chapter chapter)
     {
-        if (!Directory.Exists(volumePath))
-            Directory.CreateDirectory(volumePath);
+        if (!Directory.Exists(jsonCachePath))
+            throw new DirectoryNotFoundException("Could found the cache path please create it first");
 
         var options = new JsonSerializerOptions
         {
@@ -21,7 +22,7 @@ public abstract class SaveChaptersToJsonUseCase
 
         var chapterTitle = $"{chapter.ChapterId} - {chapter.Title}.json";
         var sanitizedChapterTitle = PathHelper.SanitizeFileName(chapterTitle);
-        var filePath = Path.Combine(volumePath, sanitizedChapterTitle);
+        var filePath = Path.Combine(jsonCachePath, sanitizedChapterTitle);
 
         var isFileExists = File.Exists(filePath);
         if (isFileExists)
