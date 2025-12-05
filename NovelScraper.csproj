@@ -12,6 +12,7 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-preview.7.25380.108" />
       <PackageReference Include="Microsoft.Playwright" Version="1.56.0" />
       <PackageReference Include="QuickEPUB" Version="1.2.0" />
+      <PackageReference Include="VersOne.Epub" Version="3.3.4" />
     </ItemGroup>
 
     <ItemGroup>
